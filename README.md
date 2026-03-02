@@ -79,19 +79,7 @@ FutureSeat converts raw cutoff data into an intelligent strategy engine that:
 - Rank gap insights
 
 - Final decision support
-
-# System Architecture
-
-Frontend (React + Tailwind)
-⬇
-Backend API (FastAPI)
-⬇
-Database (PostgreSQL)
-⬇
-Scoring & Feasibility Engine
-
-The architecture ensures scalability, clean separation of concerns, and real-time response performance.
-
+  
 # Tech Stack
 Frontend
 
