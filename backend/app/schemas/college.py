@@ -16,3 +16,14 @@ class CollegeResponse(CollegeBase):
 
     class Config:
         from_attributes = True
+
+
+class PredictRequest(BaseModel):
+    rank: int
+    branch: str
+
+
+class PredictResponse(BaseModel):
+    safe: list[CollegeResponse]
+    target: list[CollegeResponse]
+    aspirational: list[CollegeResponse]
