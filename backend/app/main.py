@@ -9,7 +9,6 @@ from app.admin import setup_admin
 
 app = FastAPI(title=settings.APP_NAME)
 
-# IMPORTANT: Middleware must be added before setup_admin
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.ADMIN_SESSION_SECRET,
@@ -23,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Use the consolidated logic from admin.py
 setup_admin(app, engine)
 
 app.include_router(v1_router, prefix="/api/v1")

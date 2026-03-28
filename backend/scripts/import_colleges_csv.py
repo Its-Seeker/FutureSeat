@@ -24,7 +24,11 @@ try:
     print(f"Cleared old {exam_type} data")
 
     with open(args.csv, newline='', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
+        sample = f.read(1024)
+        f.seek(0)
+        delim = '\t' if '\t' in sample else ','
+        
+        reader = csv.DictReader(f, delimiter=delim)
         
         for i, row in enumerate(reader):
             try:
@@ -35,20 +39,68 @@ try:
                     continue
 
                 course = (lower_row.get("branch") or lower_row.get("course") or "").strip()
-                category = (lower_row.get("category") or "GEN").upper().strip()
-                gender = (lower_row.get("gender") or "ANY").upper().strip()
                 
+                raw_category = (lower_row.get("category") or "GEN").upper().strip()
+                raw_gender   = (lower_row.get("gender") or "ANY").upper().strip()
+                raw_special  = (lower_row.get("special") or "").strip()
+
+                quota = None
+                category = "GEN"
+                gender = "MALE"
+                special = None
+
                 # ---------------------------------------------------------
-                # CRITICAL FIX: Force women's colleges to be "FEMALE"
-                # This overrides the incorrect "Male" data in the CSV
+                # SMART ALIGNMENT: Fix NSUT/IIITD shifted columns
                 # ---------------------------------------------------------
+                if raw_category in ["HS", "OS", "AI"]:
+                    quota = raw_category
+                    
+                    # Extract Category and Special (PwD/CW) from the shifted gender column
+                    if "(PWD)" in raw_gender:
+                        special = "PwD"
+                        category = raw_gender.replace("(PWD)", "").strip()
+                    elif "CW" in raw_gender:
+                        special = "CW"
+                        category = raw_gender.replace("CW", "").strip()
+                    else:
+                        special = None
+                        category = raw_gender
+
+                    # Extract actual Gender from the shifted special column
+                    if "FEMALE" in raw_special.upper():
+                        gender = "FEMALE"
+                    else:
+                        gender = "MALE" # Gender-Neutral maps to Male for standard prediction
+                else:
+                    # Standard DTU format
+                    category = raw_category
+                    if "FEMALE" in raw_gender:
+                        gender = "FEMALE"
+                    else:
+                        gender = "MALE"
+
+                    if raw_special.lower() not in ["nan", "none", ""]:
+                        special = raw_special
+
+                # ---------------------------------------------------------
+                # STANDARDIZE CATEGORIES (OPEN -> GEN, OBC-NCL -> OBC)
+                # ---------------------------------------------------------
+                if "OPEN" in category or "GEN" in category:
+                    category = "GEN"
+                elif "OBC" in category:
+                    category = "OBC"
+                elif "EWS" in category:
+                    category = "EWS"
+                elif "SC" in category:
+                    category = "SC"
+                elif "ST" in category:
+                    category = "ST"
+
+                # Force IGDTUW to Female
                 if "IGDTUW" in name.upper() or "WOMEN" in name.upper():
                     gender = "FEMALE"
-                
-                special = (lower_row.get("special") or "").strip()
-                if special.lower() in ["nan", "none", ""]:
-                    special = None
 
+                # Parse Ranks Safely
                 opening_raw = (lower_row.get("opening rank") or lower_row.get("opening_rank") or "").strip()
                 closing_raw = (lower_row.get("closing rank") or lower_row.get("closing_rank") or "").strip()
                 
@@ -58,31 +110,27 @@ try:
                 if not closing:
                     continue 
 
+                # DB Insert
                 college = College(
-                    name=name, 
-                    state=lower_row.get("state"), 
-                    type=lower_row.get("type"),
-                    exam_type=exam_type, 
-                    course=course,
+                    name=name, state=lower_row.get("state"), type=lower_row.get("type"),
+                    exam_type=exam_type, course=course,
                 )
                 db.add(college)
                 db.flush()
                 loaded_colleges += 1
 
                 cutoff = Cutoff(
-                    college_id=college.id, 
-                    quota=lower_row.get("quota"),
-                    category=category, 
-                    gender=gender,
-                    special=special, 
-                    opening_rank=opening, 
-                    closing_rank=closing,
+                    college_id=college.id, quota=quota, category=category, 
+                    gender=gender, special=special, 
+                    opening_rank=opening, closing_rank=closing,
                 )
                 db.add(cutoff)
                 db.flush()
                 loaded_cutoffs += 1
 
             except Exception as row_err:
+                # CRITICAL POSTGRES FIX: Rollback transaction so next row can proceed
+                db.rollback()
                 print(f"  Row {i+1} skipped due to error: {row_err}")
                 continue
 

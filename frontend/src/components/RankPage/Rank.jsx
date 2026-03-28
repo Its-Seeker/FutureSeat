@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import './rank.css'
-import { FaLinkedin, FaEnvelope, FaTwitter } from "react-icons/fa";
-import { FaShieldAlt, FaTrophy, FaStar } from "react-icons/fa";
+import './rank.css';
 import { useNavigate } from "react-router-dom";
+import { FaShieldAlt, FaTrophy, FaStar, FaLinkedin, FaEnvelope, FaTwitter } from "react-icons/fa";
 
 const Rank = () => {
     const navigate = useNavigate();
@@ -19,13 +18,13 @@ const Rank = () => {
 
     const handleAnalyze = async () => {
         if (!rank) return alert("Please enter your rank");
-        
+
         setLoading(true);
         setError(null);
 
         try {
             let url = `http://127.0.0.1:8000/api/v1/predict/${examType}?rank=${rank}`;
-            
+
             if (examType === "btech") {
                 url += `&category=${category}&gender=${gender}`;
                 if (special !== "None") {
@@ -37,8 +36,8 @@ const Rank = () => {
             if (!response.ok) throw new Error("Failed to fetch data from the server.");
 
             const data = await response.json();
-            setResults(data); 
-            
+            setResults(data);
+
         } catch (err) {
             setError(err.message);
         } finally {
@@ -80,11 +79,11 @@ const Rank = () => {
 
                             <div className="rank-input-group">
                                 <label>Your Rank</label>
-                                <input 
-                                    type="number" 
-                                    placeholder="e.g. 20000" 
-                                    value={rank} 
-                                    onChange={(e) => setRank(e.target.value)} 
+                                <input
+                                    type="number"
+                                    placeholder="e.g. 20000"
+                                    value={rank}
+                                    onChange={(e) => setRank(e.target.value)}
                                 />
                             </div>
 
@@ -115,7 +114,7 @@ const Rank = () => {
                                             <option value="None">None</option>
                                             <option value="PwD">PwD</option>
                                             <option value="Sports">Sports</option>
-                                            <option value="CW">CW (Defence)</option> {/* NEW OPTION */}
+                                            <option value="CW">CW (Defence)</option>
                                         </select>
                                     </div>
 
@@ -125,7 +124,7 @@ const Rank = () => {
                             <button onClick={handleAnalyze} disabled={loading}>
                                 {loading ? "Analyzing..." : "Analyze Colleges"}
                             </button>
-                            
+
                             {error && <p style={{color: "red", marginTop: "10px"}}>{error}</p>}
                         </div>
                     </div>
@@ -133,21 +132,43 @@ const Rank = () => {
                     <div className="rank-hero-right">
                         {results ? (
                             <div className="results-container" style={{backgroundColor: "white", padding: "20px", borderRadius: "10px", color: "black", maxHeight: "400px", overflowY: "auto"}}>
-                                
-                                
-                                {results.safe?.length > 0 && <h4>🟢 Safe Choices</h4>}
-                                <ul>
-                                    {results.safe?.slice(0, 10).map((r, i) => (
-                                        <li key={i}><strong>{r.college}</strong> - {r.course}</li>
-                                    ))}
-                                </ul>
 
-                                {results.moderate?.length > 0 && <h4 style={{marginTop: "15px"}}>🟡 Moderate Choices</h4>}
-                                <ul>
-                                    {results.moderate?.slice(0, 10).map((r, i) => (
-                                        <li key={i}><strong>{r.college}</strong> - {r.course}</li>
-                                    ))}
-                                </ul>
+                                {results.safe?.length > 0 && (
+                                    <>
+                                        <h4>🟢 Safe Choices</h4>
+                                        <ul>
+                                            {results.safe.slice(0, 10).map((r, i) => (
+                                                <li key={i}><strong>{r.college}</strong> - {r.course}</li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                )}
+
+                                {results.moderate?.length > 0 && (
+                                    <>
+                                        <h4 style={{marginTop: "15px"}}>🟡 Moderate Choices</h4>
+                                        <ul>
+                                            {results.moderate.slice(0, 10).map((r, i) => (
+                                                <li key={i}><strong>{r.college}</strong> - {r.course}</li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                )}
+
+                                {results.risky?.length > 0 && (
+                                    <>
+                                        <h4 style={{marginTop: "15px"}}>🔴 Risky Choices</h4>
+                                        <ul>
+                                            {results.risky.slice(0, 10).map((r, i) => (
+                                                <li key={i}><strong>{r.college}</strong> - {r.course}</li>
+                                            ))}
+                                        </ul>
+                                    </>
+                                )}
+
+                                {results.count === 0 && (
+                                    <p style={{textAlign: "center", color: "#666"}}>No colleges found for this rank. Try a higher rank or different filters.</p>
+                                )}
                             </div>
                         ) : (
                             <div className="graph-placeholder">Results will appear here</div>
@@ -162,9 +183,9 @@ const Rank = () => {
                 <div className="rank-container">
                     <h2>How it works ?</h2>
                     <div className="rank-steps">
-                        <div className="rank-step"><div className="rank-circle">1</div><p>Enter details like Marks, Branch, etc.</p></div>
-                        <div className="rank-step"><div className="rank-circle">2</div><p>Get estimated ranks.</p></div>
-                        <div className="rank-step"><div className="rank-circle">3</div><p>Explore college options.</p></div>
+                        <div className="rank-step"><div className="rank-circle">1</div><p>Enter details like Rank, Category, etc.</p></div>
+                        <div className="rank-step"><div className="rank-circle">2</div><p>Get college predictions instantly.</p></div>
+                        <div className="rank-step"><div className="rank-circle">3</div><p>Explore your college options.</p></div>
                     </div>
                 </div>
             </div>
